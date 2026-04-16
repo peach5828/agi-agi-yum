@@ -244,7 +244,7 @@
 
   const STORAGE_KEY = 'checklist100_yum_yuna_duel_v3';
   let previousDone = 0;
-  let audioUnlocked = false;
+  let meowAudio = null;
 
   function makeBgHearts(){
     const count = 14;
@@ -385,53 +385,14 @@
     return `재영과 유나의 결투\n완료 ${getDoneCount()} / 100\n\n` + lines.join('\n');
   }
 
-  function unlockAudio(){
-    audioUnlocked = true;
-    window.removeEventListener('pointerdown', unlockAudio);
-    window.removeEventListener('keydown', unlockAudio);
-  }
-
   function playMeow(){
-    if(!audioUnlocked) return;
     try{
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if(!AudioContext) return;
-      const ctx = new AudioContext();
-
-      const now = ctx.currentTime;
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.0001, now);
-      master.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
-      master.connect(ctx.destination);
-
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1300;
-
-      osc1.type = 'sawtooth';
-      osc2.type = 'triangle';
-
-      osc1.frequency.setValueAtTime(720, now);
-      osc1.frequency.exponentialRampToValueAtTime(520, now + 0.12);
-      osc1.frequency.exponentialRampToValueAtTime(410, now + 0.28);
-
-      osc2.frequency.setValueAtTime(900, now);
-      osc2.frequency.exponentialRampToValueAtTime(620, now + 0.10);
-      osc2.frequency.exponentialRampToValueAtTime(500, now + 0.26);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(master);
-
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 0.42);
-      osc2.stop(now + 0.42);
-
-      setTimeout(() => ctx.close().catch(() => {}), 700);
+      if(!meowAudio){
+        meowAudio = new Audio('yummm.mp3');
+        meowAudio.volume = 0.5;
+      }
+      meowAudio.currentTime = 0;
+      meowAudio.play().catch(() => {});
     }catch(e){}
   }
 
@@ -473,7 +434,10 @@
 
       checkbox.addEventListener('change', () => {
         save();
-        if(checkbox.checked) triggerBurst(li);
+        if(checkbox.checked){
+          triggerBurst(li);
+          playMeow();
+        }
       });
 
       text.addEventListener('input', save);
@@ -505,9 +469,6 @@
     const ok = await copyText(buildFullSummary());
     showCopyStatus(ok ? '전체 목록을 복사했어.' : '복사에 실패했어.');
   });
-
-  window.addEventListener('pointerdown', unlockAudio, { once: true });
-  window.addEventListener('keydown', unlockAudio, { once: true });
 
   makeBgHearts();
   build();
